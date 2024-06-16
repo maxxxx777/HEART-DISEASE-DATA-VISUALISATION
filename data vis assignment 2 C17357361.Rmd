@@ -1,0 +1,737 @@
+---
+title: "Data Visualisation assignment 2"
+author: "Max Ammann"
+date: "2024-04-19"
+output: html_document
+---
+
+#LINK TO DATASET : https://archive.ics.uci.edu/dataset/45/heart+disease
+
+To install the necessary packages
+```{r}
+install.packages("dplyr")
+install.packages("ggplot2")
+```
+
+package readr is used to import datasets. package dplyr is used for merging datasets. package ggplot2 is used for making graphics.
+```{r}
+library(readr) 
+library(dplyr) 
+library(ggplot2) 
+```
+
+Im importing the 4 heart disease datasets.
+```{r}
+heartdisease_va <- read_csv("va.data")
+heartdisease_switzerland <- read_csv("switzerland.data")
+heartdisease_hungary <- read_csv("hungarian.data")
+heartdisease_cleveland <- read_csv("cleveland.data")
+```
+
+
+From looking at the datasets the data is completely raw. using the codebook that comes with these datasets i want to add column names to each column so that it isnt just a bunch of numbers. The codebook denotes each number for each column used and using this we can tell what each column means.
+```{r}
+columns <- c("Age" , "Sex" , "ChestPainType" , "RestingBP", "SerumCholesterol" , "FastingBS" 
+               ,"RestingECG" , "MaxHeartRate" , "ExerciseAngina" , "STdepression" , "SlopeofPeakExceriseST" 
+               , "NumberofVessels" , "Thal" , "Diagnosis")
+```
+
+In this step I am adding the predefinied column names above to each column of all of the 4 datasets.
+```{r}
+colnames(heartdisease_va) <- columns
+```
+
+```{r}
+colnames(heartdisease_switzerland) <- columns
+```
+
+```{r}
+colnames(heartdisease_hungary) <- columns
+```
+
+```{r}
+colnames(heartdisease_cleveland) <- columns
+```
+
+Now i am checking to see that the column names have applied to each dataset. I am also inspecting for any other irreuglarities that i can see.
+```{r}
+print(heartdisease_va)
+```
+```{r}
+print(heartdisease_switzerland)
+```
+
+```{r}
+print(heartdisease_hungary)
+```
+
+```{r}
+print(heartdisease_cleveland)
+```
+
+From inspection of these datasets i noticed that there seemed to be a lot of "?" in some of the datasets. I assume these values mean that there is no value there. Therefore I decided to change these values to NA indicating no value available.
+
+```{r}
+heartdisease_va[heartdisease_va == "?"] <- NA
+```
+
+```{r}
+heartdisease_switzerland[heartdisease_switzerland == "?"] <- NA
+```
+
+```{r}
+heartdisease_hungary[heartdisease_hungary == "?"] <- NA
+```
+
+```{r}
+heartdisease_cleveland[heartdisease_cleveland == "?"] <- NA
+```
+
+
+I then decided to show how many NA counts there are in each column of each of the 4 datasets so I could see if there are any columns that may be dodgy or missing a lot of values.
+```{r}
+va_na <- colSums(is.na(heartdisease_va))
+print(va_na)
+```
+
+```{r}
+switzerland_na <- colSums(is.na(heartdisease_switzerland))
+print(switzerland_na)
+```
+
+```{r}
+hungary_na <- colSums(is.na(heartdisease_hungary))
+print(hungary_na)
+```
+
+```{r}
+cleveland_na <- colSums(is.na(heartdisease_cleveland))
+print(cleveland_na)
+```
+From the columns seen above, there seems to be a lot of NA values only in the columns "SlopeofPeakExerciseST", "NumberofVessels" and "Thal". I find this worrying and therefore I decided to just completely remove these 3 columns from each of the 4 datasets as a smaller sample size of these columns would'nt be a good representation of the data in these columns. 
+
+```{r}
+remove_col <- c("SlopeofPeakExceriseST", "NumberofVessels", "Thal")
+heartdisease_va1 <- heartdisease_va[, !names(heartdisease_va) %in% remove_col]
+```
+
+```{r}
+remove_col1 <- c("SlopeofPeakExceriseST", "NumberofVessels", "Thal")
+heartdisease_switzerland1<- heartdisease_switzerland[, !names(heartdisease_switzerland) %in% remove_col1]
+```
+
+```{r}
+remove_col2 <- c("SlopeofPeakExceriseST", "NumberofVessels", "Thal")
+heartdisease_hungary1 <- heartdisease_hungary[, !names(heartdisease_hungary) %in% remove_col2]
+```
+
+```{r}
+remove_col3 <- c("SlopeofPeakExceriseST", "NumberofVessels", "Thal")
+heartdisease_cleveland1 <- heartdisease_cleveland[, !names(heartdisease_cleveland) %in% remove_col3]
+```
+
+After removing the 3 columns from all 4 datasets that had a large amount of NA values, I then decided to remove all the rest of the rows that contain NA values in each of the 4 datasets. 
+
+```{r}
+heartdisease_va_clean <-na.omit(heartdisease_va1)
+```
+
+```{r}
+heartdisease_switzerland_clean <-na.omit(heartdisease_switzerland1)
+```
+
+```{r}
+heartdisease_hungary_clean <-na.omit(heartdisease_hungary1)
+```
+
+```{r}
+heartdisease_cleveland_clean <-na.omit(heartdisease_cleveland1)
+```
+
+
+
+I have now removed all the the NA values but just to double check that I have I am going to get the number of NA counts per column in each dataset.
+
+```{r}
+va_na1 <- colSums(is.na(heartdisease_va_clean))
+print(va_na1)
+```
+
+```{r}
+switzerland_na1 <- colSums(is.na(heartdisease_switzerland_clean))
+print(switzerland_na1)
+```
+
+```{r}
+hungary_na1 <- colSums(is.na(heartdisease_hungary_clean))
+print(hungary_na1)
+```
+
+```{r}
+cleveland_na1 <- colSums(is.na(heartdisease_cleveland_clean))
+print(cleveland_na1)
+```
+
+As we can see from the above tables that show all of the columns in each dataset there are no NA counts in each column.
+
+Now I want to check that all of the columns values are in their correct format.We cannot have numeric values as a character varible as you will not be able to treat the values as numeric and cannot perform numerical statistcal analysis on it. To do this I will do a quick summary statistics for each dataset to check this.
+
+```{r}
+summary(heartdisease_va_clean)
+```
+
+```{r}
+summary(heartdisease_switzerland_clean)
+```
+
+```{r}
+summary(heartdisease_hungary_clean)
+```
+
+```{r}
+summary(heartdisease_cleveland_clean)
+```
+
+As we can see from the summary statistics above some of the columns have been imported as character variables when they should be numeric variables. To fix this I will convert all columns in the datasets to numeric variables using the mutate function.
+
+```{r}
+heartdisease_va_clean1 <- mutate_all(heartdisease_va_clean, as.numeric)
+heartdisease_switzerland_clean1 <- mutate_all(heartdisease_switzerland_clean, as.numeric)
+heartdisease_hungary_clean1 <- mutate_all(heartdisease_hungary_clean, as.numeric)
+heartdisease_cleveland_clean1 <- mutate_all(heartdisease_cleveland_clean, as.numeric)
+```
+
+I want to double check that all of the variables in the dataset are now numeric. To do this I will use summary statistics.
+```{r}
+summary(heartdisease_va_clean1)
+summary(heartdisease_switzerland_clean1)
+summary(heartdisease_hungary_clean1)
+summary(heartdisease_cleveland_clean1)
+```
+
+All column varaibles are now numeric type which is what we want to be able to perform analysis.
+
+Now I want to check to see if there are any duplicated rows in the datasets. to do this i will use the fuction duplicated.
+
+```{r}
+va_dup <- heartdisease_va_clean1[duplicated(heartdisease_va_clean1), ]
+print(va_dup)
+```
+
+```{r}
+switzerland_dup <- heartdisease_switzerland_clean1[duplicated(heartdisease_switzerland_clean1), ]
+print(switzerland_dup)
+```
+
+```{r}
+hungary_dup <- heartdisease_hungary_clean1[duplicated(heartdisease_hungary_clean1), ]
+print(hungary_dup)
+```
+
+```{r}
+cleveland_dup <- heartdisease_cleveland_clean1[duplicated(heartdisease_cleveland_clean1), ]
+print(cleveland_dup)
+```
+
+As we can see from the table above there is only 1 duplicated row which is part of the va dataset. We need to remove this because this is incorrect. to remove this we use the unique fuction.
+
+```{r}
+heartdisease_va_clean2 <- unique(heartdisease_va_clean1)
+print(heartdisease_va_clean2)
+```
+
+Checking the swiss dataset for abnormalities
+```{r}
+tibble(heartdisease_switzerland_clean1)
+```
+
+As we can see from looking at the swiss dataset above we can see that all the values for serum cholesterol are 0 which is odd. Serum cholesterol values cannot possible be 0 therefore I will decide to leave out the swiss dataset from merging as the data may be incorrect.
+
+I will merge the other 3 datasets together below using the function bind rows to make a much bigger single heart disease dataset.
+
+```{r}
+heartdisease_total <- bind_rows(heartdisease_va_clean2, heartdisease_hungary_clean1, heartdisease_cleveland_clean1)
+```
+
+We now have a big, single, clean heart disease dataset of 690 observations with 11 variables.
+
+
+Now I want to check the binary values in the dataset to see if there are any abnormal values. For example for sex the values should be 1 for male and 2 for female therefore there shouldnt be a '46' in this column. To do this I will get the counts of each value for each column and put them in a table to see all the values and their counts in each column.
+```{r}
+for (col_name in colnames(heartdisease_total)) {
+  cat("Counts for", col_name, ":\n")
+  col_counts <- table(heartdisease_total[[col_name]])
+  print(col_counts)
+  cat("\n")
+}
+```
+
+As we can see from the above tables all of the binary values seem to be fine. I see that there are still some values with 0 in the Serum Cholesterol and RestingBP columns. I will need remove those rows as it is impossibles to have 0 for serum cholesterol and 0 for systolic blood pressure.
+
+```{r}
+values_0 <- c("SerumCholesterol", "RestingBP")
+
+heartdisease_total1 <- heartdisease_total %>%
+  filter(!(SerumCholesterol == 0 | RestingBP == 0))
+```
+
+
+I want to double check if the above code has removed the rows with 0 values in the columns serum cholesterol and resting blood pressure. I will do this by using the code i used earlier to check the values and their counts in each column of the dataset.
+
+```{r}
+for (col_name in colnames(heartdisease_total1)) {
+  cat("Counts for", col_name, ":\n")
+  col_counts <- table(heartdisease_total1[[col_name]])
+  print(col_counts)
+  cat("\n")
+}
+```
+
+As we can see from the counts above there are no counts with a value of 0 in the serum cholesterol and restingbp columns meaning that the rows with 0 in these 2 columns have been removed from the dataset.
+
+
+Now I want change the binary values columns from  their numeric values to their number co-ordinated binary values using the codebook which was accompanied with this dataset.
+
+
+As we can see from the codebook  1=Male and 0=Female
+```{r}
+heartdisease_total2 <- heartdisease_total1 %>%
+  mutate(Sex = case_when(Sex == 1 ~ "Male", Sex == 0 ~ "Female"))
+```
+
+As we can see from the codebook  1=high Fasting Blood sugar and 0= Low fasting blood sugar.
+```{r}
+heartdisease_total3 <- heartdisease_total2 %>%
+  mutate(FastingBS = case_when(FastingBS == 1 ~ "High(>120mg/dl)", FastingBS == 0 ~ "Low(<120mg/dl)"))
+```
+
+As we can see from the codebook 1 = yes for exercise induced angina(chest pain) and  0 = no for exercise induced angina (chest paint)
+```{r}
+heartdisease_total4 <- heartdisease_total3 %>%
+  mutate(ExerciseAngina = case_when(ExerciseAngina == 1 ~ "Yes",
+                                   ExerciseAngina == 0 ~ "No",))
+```
+
+As we can see from the codebook Types of chest pain are 1 = typical angina , 2= atypical angina , 3 = Non-anginal pain  4 = asymptomatic.
+```{r}
+heartdisease_total5 <- heartdisease_total4 %>%
+  mutate(ChestPainType = case_when(
+    ChestPainType == 1 ~ "Typical Angina",
+    ChestPainType == 2 ~ "Atypical Angina",
+    ChestPainType == 3 ~ "Non-Anginal Pain",
+    ChestPainType == 4 ~ "Asymptomatic", ))
+```
+
+As we can see from the codebook Resting Electrocardiogram results are 0 = normal , 1 = Abnormal ST-T wave , 2 = Left Ventricular Hypertrophy
+```{r}
+heartdisease_total6 <- heartdisease_total5 %>%
+  mutate(RestingECG = case_when(
+    RestingECG == 0 ~ "Normal",
+    RestingECG == 1 ~ "Abnormal (ST-T wave)",
+    RestingECG == 2 ~ "Left Ventricular Hypertrophy",))
+```
+
+As we can see from the codebook Diagnosis results are  0= no heart disease and 1,2,3,4= Heart Disease
+```{r}
+heartdisease_total7 <- heartdisease_total6 %>%
+  mutate(Diagnosis = case_when(
+    Diagnosis == 0 ~ "No Heart Disease",
+    Diagnosis == 1 ~ "Heart Disease",
+    Diagnosis == 2 ~ "Heart Disease",
+    Diagnosis == 3 ~ "Heart Disease",
+    Diagnosis == 4 ~ "Heart Disease",))
+```
+
+I want to double check that the right binary values have been applied to the dataset.
+
+```{r}
+tibble(heartdisease_total7)
+```
+
+As we can see from the tibble above the correct binary values have been applied to this dataset.
+
+Now I want to check the numeric values to see the spread of the values and to see if there are any abnormal outliers to remove. To do this I will plot a box plot for each of the numeric variables.
+
+Box plot for Age
+```{r}
+boxplot(heartdisease_total7$Age, main="Boxplot of Age")
+```
+From the boxplot above there doesnt seem to be any outliers which is good. We can see from the boxplot above that the age range seems to be from around 30 to late 70s with an average age of around mid 50s
+
+
+Boxplot for RestingBP 
+```{r}
+boxplot(heartdisease_total7$RestingBP, main="Boxplot of Resting Blood Pressure")
+```
+We can see from the boxplot above that there are some high outliers for resting systolic blood pressure. Although these numbers are quite high, it is very possible that there are people with values this high as a large proportion of this dataset have heart disease and high resting blood pressure would be associated with heart disease. Therefore I do not see the need to remove these outliers as I think that they are correct and valuable to the dataset. We can see that the range for Resting Blood Pressure seems to be from just less than 100 to 200 and the average seems to be around 130 measured in mmhg.
+
+
+Boxplot for SerumCholesterol
+```{r}
+boxplot(heartdisease_total7$SerumCholesterol, main="Boxplot of Serum Cholesterol")
+```
+
+
+As we can see from the boxplot above there are one or two low outliers and there are a lot of very high outliers for serum cholesterol levels. Similar with Resting blood pressure there are some very high outliers but I do not think there is a need to remove these outliers as because due to there being a heart disease data set, a lot of people in this dataset will have heart disease and a high serum cholesterol level would be indicative of heart disease therefore i think that these very high serum cholesterol values are correct and that there is no need to remove these outliers from the dataset. The range for serum cholesterol is from around 100 to 600 with the average being about 250 measured in mg/dl.
+
+
+Boxplot for MaxHeartRate
+```{r}
+boxplot(heartdisease_total7$MaxHeartRate, main="Boxplot of Maximum Heart Rate")
+```
+As we can see from the boxplot above for Max Heart Rate there doesnt seem to be any outliers which is good. The range for Max Heart Rate is from about 80 to 200 with an average of 140. Although this seems like a quite low average for Max Heart Rate, you have to take into consideration that the average age in this dataset is mid 50s and a lot of people in this dataset have heart disease, so therefore the average max heart rate will not be that high at all. Due to all of this I see no need to make any adjustments to this variable.
+
+
+
+I have decided to add a risk index variable based on the variables serum cholesterol, resting systolic blood pressure and max heart rate as i think all of these variables would be linked with heart disease. I want to standardise all of these variables by calculating the mean of each variable and subtracting it from the value  and then dividing this number by the standard deviation of this variable. Using Serum Cholesterol for example I would get the mean for Serum Cholesterol and then take this value away from the individual serum cholesterol values and then divide that number by the standard deviation of serum cholesterol. this is used so that the three afformentioned variables are all now on a similar scale and can be compared and combined. It is also important to standaridise these scores because now each variable has an equal weightinh in the risk index variable whereas if i didnt standardise these variables serum cholesterol might have a greater weighting in the risk index because it would generally have a higher number than the other two variables. Therefore I think that the higher the score in the risk index the more likely a person should have a positive heart disease diagnosis.
+
+
+```{r}
+heartdisease_total7 <- heartdisease_total7 %>%
+mutate(
+    StdCholesterol = (heartdisease_total7$SerumCholesterol - mean(heartdisease_total7$SerumCholesterol, na.rm = TRUE)) / sd(heartdisease_total7$SerumCholesterol, na.rm = TRUE),
+    StdBloodPressure = (heartdisease_total7$RestingBP - mean(heartdisease_total7$RestingBP, na.rm = TRUE)) / sd(heartdisease_total7$RestingBP, na.rm = TRUE),
+    StdAge = (heartdisease_total7$Age - mean(heartdisease_total7$Age, na.rm = TRUE)) / sd(heartdisease_total7$Age, na.rm = TRUE),
+    RiskIndex = StdCholesterol + StdBloodPressure + StdAge
+  )
+```
+
+
+
+
+
+I am now happy that ive fully cleaned the dataset and perform sufficient wrangling so that I can now work on this dataset to provide further data analysis. One final summary of the now finished dataset.
+```{r}
+summary(heartdisease_total7)
+```
+
+
+
+
+
+
+USER STORY
+As a data scientist working at a leading healthcare center, I am tasked with finding a reliable way to predict the risk of heart disease in patients at my clinic. My patients range from young adults to the elderly, each coming with their unique health profiles and concerns.
+I am looking for patterns in clinical data that could help identify high-risk individuals early on. If I could know which patients are likely to have heart disease based on a few key indicators, I could prioritize their treatment and potentially save more lives.
+To make these determinations, I am using on a comprehensive dataset from 4 smaller heart disease datasets that includes various health metrics, such as serum cholesterol levels, resting systolic blood pressure, maximum heart rate, Age, Sex, Diagnosis, ST-depression, chest pain type, Fasting blood sugar levels, resting ecg results, exercise induced angina, Diagnosis and Risk Index.
+
+The goal is to pose 3 questions that we can explore and provide explanatory visualisations for to give insights into the dataset. The 3 questions that I have chosen are : 1) Using the newly created Risk Index variable, is there a discernible difference between a positive heart disease diagnosis and a negative heart disease diagnosis? 2) Is there a difference in heart disease diagnosis based on max heart rate values? 3) Is there a correlation between serum cholesterol and age based on heart disease diagnosis? These 3 visualisations will give 3 explanatory insights into the dataset that we can then use in practice to be able to compare health indicators across our patient population, distinguish between patients with and without heart disease, and potentially spot threshold values where the likelihood of heart disease increases significantly.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+VISUALISATION 1
+
+
+
+For the first visualisation I show a stacked histogram highlighting the difference in the risk index scores based on heart disease diagnosis. We can see there is a clear difference between a positive heart disease diagnosis (pink) and no heart disease (turqouise). From the graph it seems that a positive heart disease diagnosis is associated with a higher risk index score and a negative heart disease diagnosis is associated with a lower risk index score. 
+```{r}
+custom_colors <- c("Heart Disease" = "hotpink", "No Heart Disease" = "turquoise1")
+
+ggplot(heartdisease_total7, aes(x = RiskIndex, fill = Diagnosis)) +
+  geom_histogram(position = "stack", binwidth = 0.2) +  
+  scale_fill_manual(values = custom_colors) +  
+  labs(title = "Stacked Histogram of Risk Index Scores",
+       subtitle = "Distinct Risk Index Score Differences Between Heart Disease Diagnosis" ,
+       x = "Risk Index",
+       y = "Number of people",
+       fill = "Diagnosis") +
+  coord_cartesian(xlim = c(-4, 4)) +  
+  theme_minimal() +
+  theme(axis.title = element_text(size = 12), 
+        plot.subtitle = element_text(hjust = 0.5, size= 12),
+        axis.text = element_text(size = 10),
+        legend.position = "bottom",
+        plot.title = element_text(hjust = 0.5, size = 14, face = "bold")) +
+  guides(fill = guide_legend(title.position = "top", title.hjust = 0.5))
+``` 
+
+
+
+
+
+PREVIOUS ITERATIONS OF VISUALISATION 1
+
+Boxplot showing comparison between risk index and heart disease diagnosis. I added labels and set the theme to minimal and set the colour to be coded by the diagnosis. I thought a box plot was a bit basic so i decided to try others
+```{r}
+ggplot(heartdisease_total7, aes(x = Diagnosis, y = RiskIndex, fill = Diagnosis)) +
+  geom_boxplot() +
+  labs(x = "Diagnosis", y = "Risk Index", title = "Comparison of Risk Index Between Patients with and without Heart Disease") +
+  theme_minimal()
+```
+
+
+I then plotted a density plot showing risk index based on heart disease diagnosis. I played around with the opacity of this graph and found 0.5 to be about right. I added labels and title too, set the theme to minimal and colour coded the graph based on the diagnosis result. I liked this graph but thought i could find one that conveyed the message a bit better.
+
+```{r}
+ggplot(heartdisease_total7,
+       aes(x = RiskIndex, fill = Diagnosis)) +
+  geom_density(alpha = 0.5) +
+  labs(x = "Risk Index", y = "Density", title = "Density of Risk Index for Patients With and Without Heart Disease") +
+  theme_minimal()
+```
+
+
+
+
+
+
+```{r}
+ggplot(heartdisease_total7, aes(x = Diagnosis, y = RiskIndex, fill = Diagnosis)) +
+  geom_violin(trim = FALSE, alpha = 0.7) +
+  scale_fill_manual(values = c("Heart Disease" = "red", "No Heart Disease" = "darkblue")) +
+  stat_summary(fun.data = function(y) {
+    return(data.frame(
+      y = quantile(y, probs = 0.5), 
+      ymin = quantile(y, probs = 0.25), 
+      ymax = quantile(y, probs = 0.75)
+    ))
+  }, geom = "errorbar", width = 0.2, color = "white") +
+  stat_summary(fun.y = median, geom = "point", shape = 23, size = 3, color = "white", fill = "black") +
+  labs(title = "Risk Index Score Distribution by Diagnosis",
+       x = "Diagnosis",
+       y = "Risk Index Score") +
+  theme_light() +
+  theme(axis.title = element_text(size = 14, face = "bold"),
+        axis.text = element_text(size = 12),
+        plot.title = element_text(hjust = 0.5, size = 16, face = "bold"),
+        legend.position = "bottom",
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank())
+```
+
+
+
+I then decided to try a faceted histogram to show the 2 groups. I also changed the binwidth in this one to 0.3 and change the opacity to 0.8. I added labels, set the theme to minimal and set the colours to match the diagnosis. I also liked this graph but I though it was hard to see the difference between the two diagnosis groups.
+
+```{r}
+ggplot(heartdisease_total7, aes(x = RiskIndex, fill = Diagnosis)) +
+  geom_histogram(binwidth = 0.3, alpha = 0.8, position = 'identity') +
+  facet_wrap(~ Diagnosis) +
+  labs(x = "Risk Index", y = "Count", title = "Distribution of Risk Index Across Diagnosis Groups") +
+  theme_minimal()
+```
+
+
+
+
+I then decided to make a histogram showing risk index and diagnosis results together to see if this would show the associated between the two diagnosis groups a bit better. I changed the labels, opacity, binwidth, set the colours to math the diagnosis and set the theme to light instead of minimal. I thought this graph was good and convey the assocaition between the 2 diagnosis groups showing that heart disease group (red) had a high risk index score and no heart disease(blue)  had a lower risk score. I liked this graph a lot but wanted to change the colours to see if it could convey the message a bit better.
+
+```{r}
+ggplot(heartdisease_total7, aes(x = RiskIndex, fill = Diagnosis)) +
+  geom_histogram(alpha = 0.8, binwidth = 0.25,  position = "identity") +
+  labs(title = "Histogram of Risk Index Scores") +
+  theme_light()
+```
+
+
+
+This histogram also shows the risk index scores based on diagnosis. with this histogram i adjusted the binwidth and opacity, changed the colours from the original red and blue to gold and blue, added labels, changed the theme and also changed the labels size, positioning and font, and moved the legend to just under the title. I think this histogram looks a lot cleaner than the previous iterations. The only problem I had with it is i still didnt like the way when the data overlapped it created a new colour which i though could be confusing as there is no colour in the legend for this new colour. i also wanted to reduce the x axis limits so that i could exlude the outliers and make the graph look better. 
+
+```{r}
+ggplot(heartdisease_total7, aes(x = RiskIndex, fill = Diagnosis)) +
+  geom_histogram(binwidth = 0.5, alpha = 0.6, position = 'identity') +
+  scale_fill_manual(values = c("Heart Disease" = "#E69F00", "No Heart Disease" = "#56B4E9")) +
+  labs(title = "Histogram of Risk Index Scores",
+       x = "Risk Index",
+       y = "Count",
+       fill = "Diagnosis") +
+  theme_bw() +
+  theme(axis.title = element_text(size = 12),
+        axis.text = element_text(size = 10),
+        legend.position = "top",
+        plot.title = element_text(hjust = 0.5, size = 14, face = "bold"))
+```
+
+This graph is very similar to the graph above the only differnces being that I changed the colour from gold and blue to light pink and light blue, I put limits on the x axis to see how it would look, changed the binwidth slightly, moved the legend again to underneath the title and changed the theme to classic. I thought this graph looked a bit better than the one above but i was still not happy with the overlapping colours.
+
+```{r}
+ggplot(heartdisease_total7, aes(x = RiskIndex, fill = Diagnosis)) +
+  geom_histogram(binwidth = 0.4, alpha = 0.6, position = 'identity') +
+  scale_fill_manual(values = c("Heart Disease" = "lightpink", "No Heart Disease" = "lightskyblue1")) +
+  labs(title = "Histogram of Risk Index Scores",
+       x = "Risk Index",
+       y = "Count",
+       fill = "Diagnosis") +
+  xlim(c(-4, 4)) +  
+  theme_classic() +
+  theme(axis.title = element_text(size = 12),
+        axis.text = element_text(size = 10),
+        legend.position = "bottom",  
+        plot.title = element_text(hjust = 0.5, size = 14, face = "bold"))
+      
+```
+
+
+
+This graph is a bit differnet to the graphs above but it is the one i have settled on for visualisation 1. I chose this graph as it is a stacked histogram so I wouldnt have to worry about the overlapping colours that the histgorams above had. I chose this as i thought it would convey the message more clearly. Firstly I changed the colour of the Diagnosis again using 2 very distinct colours, hotpink(heartdisease) and turquoise1(no heart disease). I then added labels as well as a subtitle to show the difference between the 2 groups in the graph. I also set the limits on the x axis from 4 to -4 to get rid of the outliers. I also adjusted the the positioning for the title, subtitle and i moved the legend back to underneath the graph and changed the theme back to minimal.I was very happy that this graph conveyed the message I am trying to show which is the different between diagnosis and risk index score. 
+
+```{r}
+custom_colors <- c("Heart Disease" = "hotpink", "No Heart Disease" = "turquoise1")
+
+ggplot(heartdisease_total7, aes(x = RiskIndex, fill = Diagnosis)) +
+  geom_histogram(position = "stack", binwidth = 0.2) +  
+  scale_fill_manual(values = custom_colors) +  
+  labs(title = "Stacked Histogram of Risk Index Scores",
+       subtitle = "Distinct Risk Index Score Differences Between Heart Disease Diagnosis" ,
+       x = "Risk Index",
+       y = "Number of people",
+       fill = "Diagnosis") +
+  coord_cartesian(xlim = c(-4, 4)) +  
+  theme_minimal() +
+  theme(axis.title = element_text(size = 12), 
+        plot.subtitle = element_text(hjust = 0.5, size= 12),
+        axis.text = element_text(size = 10),
+        legend.position = "bottom",
+        plot.title = element_text(hjust = 0.5, size = 14, face = "bold")) +
+  guides(fill = guide_legend(title.position = "top", title.hjust = 0.5))
+```
+
+
+VISUALISATION 2
+
+For the second visualisation I show a violin plot highlighting the difference between  max heart rate and the two heart disease diagnosis groups. We can see there is a clear difference between a positive heart disease diagnosis (red) and no heart disease (blue) as the positive heart disease diagnosis group are seen to have a lower max heart rate and the negative heart disease diagnosis group are seen to have a much higher max heart rate as we can see from the graph below. We can also see that there is a big difference in IQR between the two plots which also highlightS the difference between the two diagnosis groups. 
+
+
+```{r}
+ggplot(heartdisease_total7, aes(x = Diagnosis, y = MaxHeartRate , fill= Diagnosis)) +
+  geom_violin(trim = FALSE) +
+  labs(title = "Violin plot of Max Heart Rate by Diagnosis" , ylab = "Max Heart Rate (bpm)" ,  subtitle= "Clear difference between Diagnosis group and Max Heart Rate (bpm)") +
+   stat_summary(fun.data = function(y) {
+    return(data.frame(
+      y = quantile(y, probs = 0.5), 
+      ymin = quantile(y, probs = 0.25), 
+      ymax = quantile(y, probs = 0.75)
+    ))
+  }, geom = "errorbar", width = 0.2, color = "black") +
+  theme_light()+
+theme(plot.title = element_text(hjust = 0.5, size = 14, face = "bold"),
+      plot.subtitle = element_text(hjust = 0.5, size= 12),
+        axis.text = element_text(size = 10))
+```
+
+
+PREVIOUS ITERATIONS
+
+
+
+Initially I started off with this Violin plot. I used the X axis as the diagnosis and y as max heart rate. i added a title to the plot and used the light theme. I also used the trim = true to see what it would look like. you can see already that there is a clear differnce between the 2 diagnosis groups.
+```{r}
+ggplot(heartdisease_total7, aes(x = Diagnosis, y = MaxHeartRate)) +
+  geom_violin(trim = TRUE) +
+  labs(title = "Risk Index Score Distribution by Diagnosis") +
+     theme_light()
+```
+
+I then decided to add the diagnosis as the colour for the violin plot which i think looks a lot nicer, red for heart disease and blue for no heart disease. I also played around with the trim to make it look a lot nicer.
+
+```{r}
+ggplot(heartdisease_total7, aes(x = Diagnosis, y = MaxHeartRate , fill= Diagnosis)) +
+  geom_violin(trim = FALSE) +
+  labs(title = "Risk Index Score Distribution by Diagnosis") +
+  theme_light()
+```
+
+
+I then decided to add the 25 and 75 percentiles of each group using a black error bar as the indicator to highlight the differences even more between the 2 groupings. I also added a subtitle and cleaned up the orientation, font size and font style of the title, subtitle and text in the violin plot. I am now very happy that this violin plot conveys the difference in heart disease diagnosis for max heart rate the most effectively.
+
+```{r}
+ggplot(heartdisease_total7, aes(x = Diagnosis, y = MaxHeartRate , fill= Diagnosis)) +
+  geom_violin(trim = FALSE) +
+  labs(title = "Risk Index Score Distribution by Diagnosis") +
+   stat_summary(fun.data = function(y) {
+    return(data.frame(
+      y = quantile(y, probs = 0.5), 
+      ymin = quantile(y, probs = 0.25), 
+      ymax = quantile(y, probs = 0.75)
+    ))
+  }, geom = "errorbar", width = 0.3, color = "black") +
+  theme_light()
+theme(plot.title = element_text(hjust = 0.5, size = 14, face = "bold"),
+      plot.subtitle = element_text(hjust = 0.5, size= 12),
+        axis.text = element_text(size = 10))
+```
+
+
+
+
+
+VISUALISATION 3
+
+For the third visualisation I show a scatter plot of Age against Max Heart Rate and colour coded based on heart disease diagnosis. Heart disease (Red) and no heart disease (Blue). I also added 2 linear regression lines for both diagnosises, red for heart disease and blue for no heart disease. the heart disease linear regression line shows that the average person with heart disease has a lower max heart rate and is older. The no heart disease linear regression line shows the average person has a higher max heart rate and is younger. The slope is a lot steeper on the no heart disease linear regression line when compared with the heart disease linear regression line which indicates that maximum heart rate decreases more rapidly with age compared to those who are diagnosed with heart disease. Essentually people with heart disease's max heart rate is lower and doesnt change with age as much as people without heart disease.
+
+```{r}
+ggplot(heartdisease_total7, aes(x = Age, y = MaxHeartRate, color = Diagnosis)) +
+  geom_point(alpha= 1 , size = 2) + 
+  geom_smooth(method = "lm", se = FALSE) +  
+  labs(title = "Scatter Plot of Age vs Max Heart Rate",
+       subtitle = "Distinct Difference between Diagnosis groupings and Age and Max Heart Rate" , 
+       x = "Age (Years)",
+       y = "Max Heart Rate (bpm)") +
+  theme_minimal() +
+  theme(
+        plot.title = element_text(hjust = 0.5, size = 14, face = "bold"),
+        plot.subtitle = element_text(hjust = 0.5, size= 12),
+        text = element_text(size = 12))
+```
+
+
+PREVIOUS ITERATIONS.
+
+First I started out with a scatter plot plotting Age against Max Heart Rate. I also labelled and set the theme for the scatter plot.
+
+
+```{r}
+ggplot(heartdisease_total7, aes(x = Age, y = MaxHeartRate)) +
+  geom_point() +
+  labs(title = "Scatter Plot of Max Heart Rate vs Age",
+       x = "Age",
+       y = "Max Heart Rate (bpm)") +
+  theme_minimal()
+```
+
+
+I then decided to change the colour of the scatter plot to indicate heart disease with red and no heart disease with blue. As you can see from the scatter plot there is a difference between the red and blue points. 
+
+```{r}
+ggplot(heartdisease_total7, aes(x = Age, y = MaxHeartRate, color = Diagnosis)) +
+  geom_point() +
+  labs(title = "Scatter Plot of Max Heart Rate vs Age",
+       x = "Age",
+       y = "Max Heart Rate (bpm)",
+       color = "Heart Disease Diagnosis") +
+  theme_minimal()
+```
+
+
+I then decieded to increase the size of the data points and increase their opacity. I also added a linear regression line for each diagnosis depicted in red for heart disease and blue for no heart disease. I also added a subtitle and fixed up the orientation, font size and font style of all the text in the visualisation.
+
+```{r}
+ggplot(heartdisease_total7, aes(x = Age, y = MaxHeartRate, color = Diagnosis)) +
+  geom_point(alpha= 1 , size = 2) + 
+  geom_smooth(method = "lm", se = FALSE) +  
+  labs(title = "Scatter Plot of Age vs Max Heart Rate",
+       subtitle = "Distinct Difference between Diagnosis groupings and Age and Max Heart Rate" , 
+       x = "Age (Years)",
+       y = "Max Heart Rate (bpm)") +
+  theme_minimal() +
+  theme(
+        plot.title = element_text(hjust = 0.5, size = 14, face = "bold"),
+        plot.subtitle = element_text(hjust = 0.5, size= 12),
+        text = element_text(size = 12))
+```
+
